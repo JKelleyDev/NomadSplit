@@ -34,4 +34,4 @@ See [docs/development.md](docs/development.md) for daily workflow and commands.
 - **Frontend:** Expo, React Native, TypeScript
 - **Backend:** FastAPI, SQLAlchemy, Alembic
 - **Database:** PostgreSQL
-- **Infrastructure:** Docker
+- **DevOps:** Docker, GitHub Actions, CI/CD
