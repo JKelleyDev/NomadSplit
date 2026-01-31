@@ -1,46 +1,66 @@
-import { useSignIn } from '@clerk/clerk-expo'
-import { Link, useRouter } from 'expo-router'
+import * as React from 'react'
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
-import React from 'react'
+import { useSignUp } from '@clerk/clerk-expo'
+import { Link, useRouter } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 
-export default function Page() {
-  const { signIn, setActive, isLoaded } = useSignIn()
+export default function SignUpScreen() {
+  const { isLoaded, signUp, setActive } = useSignUp()
   const router = useRouter()
 
-  // Form state for user credentials
+  // Form state for user input
+  const [firstName, setFirstName] = React.useState('')
+  const [lastName, setLastName] = React.useState('')
   const [emailAddress, setEmailAddress] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [pendingVerification, setPendingVerification] = React.useState(false)
   const [code, setCode] = React.useState('')
 
-  // Handle the submission of the sign-in form
-  const onSignInPress = async () => {
+  // Handle submission of sign-up form
+  const onSignUpPress = async () => {
     if (!isLoaded) return
 
-    // Start the sign-in process using the email and password provided
+    // Start sign-up process using email and password provided
     try {
-      const signInAttempt = await signIn.create({
-        identifier: emailAddress,
+      await signUp.create({
+        emailAddress,
         password,
+        firstName,
+        lastName
       })
 
-      // If sign-in process is complete, set the created session as active
+      // Send user an email with verification code
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
+
+      // Set 'pendingVerification' to true to display second form
+      // and capture OTP code
+      setPendingVerification(true)
+    } catch (err) {
+      // See Clerk docs: custom flows error handling
+      // for more info on error handling
+      console.error(JSON.stringify(err, null, 2))
+    }
+  }
+
+  // Handle submission of verification form
+  const onVerifyPress = async () => {
+    if (!isLoaded) return
+
+    try {
+      // Use the code the user provided to attempt verification
+      const signUpAttempt = await signUp.attemptEmailAddressVerification({
+        code,
+      })
+
+      // If verification was completed, set the session to active
       // and redirect the user
-      if (signInAttempt.status === 'complete') {
-        await setActive({ session: signInAttempt.createdSessionId })
+      if (signUpAttempt.status === 'complete') {
+        await setActive({ session: signUpAttempt.createdSessionId })
         router.replace('../')
-      } else if (signInAttempt.status === 'needs_second_factor') {
-        // User has 2FA enabled, need to verify second factor (email code)
-        // Prepare email code verification
-        await signIn.prepareSecondFactor({
-          strategy: 'email_code',
-        })
-        // Show verification code input
-        setPendingVerification(true)
       } else {
-        // If the status isn't complete or needs_second_factor, check why
-        console.error(JSON.stringify(signInAttempt, null, 2))
+        // If the status is not complete, check why. User may need to
+        // complete further steps.
+        console.error(JSON.stringify(signUpAttempt, null, 2))
       }
     } catch (err) {
       // See Clerk docs: custom flows error handling
@@ -49,32 +69,7 @@ export default function Page() {
     }
   }
 
-  // Handle submission of 2FA verification code
-  const onVerifyPress = async () => {
-    if (!isLoaded) return
-
-    try {
-      // Attempt to verify the second factor with the code provided
-      const signInAttempt = await signIn.attemptSecondFactor({
-        strategy: 'email_code',
-        code,
-      })
-
-      // If verification was completed, set the session to active and redirect
-      if (signInAttempt.status === 'complete') {
-        await setActive({ session: signInAttempt.createdSessionId })
-        router.replace('../')
-      } else {
-        // If the status is not complete, check why
-        console.error(JSON.stringify(signInAttempt, null, 2))
-      }
-    } catch (err) {
-      // See Clerk docs: custom flows error handling
-      console.error(JSON.stringify(err, null, 2))
-    }
-  }
-
-  // 2FA Verification view - shown when second factor is needed
+  // Verification view - shown after initial sign-up
   if (pendingVerification) {
     return (
       <LinearGradient
@@ -91,10 +86,10 @@ export default function Page() {
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
           >
-            {/* 2FA verification card */}
+            {/* Verification form card */}
             <View style={styles.card}>
               <Text style={styles.logo}>🌿</Text>
-              <Text style={styles.title}>Two-Factor Authentication</Text>
+              <Text style={styles.title}>Verify Your Email</Text>
               <Text style={styles.subtitle}>
                 Enter the verification code sent to {emailAddress}
               </Text>
@@ -118,7 +113,7 @@ export default function Page() {
                 style={styles.primaryButton}
                 onPress={onVerifyPress}
               >
-                <Text style={styles.primaryButtonText}>Verify & Sign In</Text>
+                <Text style={styles.primaryButtonText}>Verify Email</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -127,7 +122,7 @@ export default function Page() {
     )
   }
 
-  // Initial sign-in form view
+  // Initial sign-up form view
   return (
     <LinearGradient
       colors={['#2E7D32', '#558B2F', '#689F38']}
@@ -143,13 +138,40 @@ export default function Page() {
           contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Sign-in form card */}
+          {/* Sign-up form card */}
           <View style={styles.card}>
             <Text style={styles.logo}>🌿</Text>
-            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>
-              Sign in to continue managing your shared expenses
+              Join NomadSplit to track and split expenses with your travel companions
             </Text>
+
+            {/* Name inputs row */}
+            <View style={styles.nameRow}>
+              {/* First name input */}
+              <View style={[styles.inputContainer, styles.nameInput]}>
+                <Text style={styles.label}>First Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={firstName}
+                  placeholder="John"
+                  placeholderTextColor="#9E9E9E"
+                  onChangeText={setFirstName}
+                />
+              </View>
+
+              {/* Last name input */}
+              <View style={[styles.inputContainer, styles.nameInput]}>
+                <Text style={styles.label}>Last Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={lastName}
+                  placeholder="Doe"
+                  placeholderTextColor="#9E9E9E"
+                  onChangeText={setLastName}
+                />
+              </View>
+            </View>
 
             {/* Email input */}
             <View style={styles.inputContainer}>
@@ -160,7 +182,7 @@ export default function Page() {
                 value={emailAddress}
                 placeholder="john@example.com"
                 placeholderTextColor="#9E9E9E"
-                onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
+                onChangeText={(email) => setEmailAddress(email)}
                 keyboardType="email-address"
               />
             </View>
@@ -171,27 +193,27 @@ export default function Page() {
               <TextInput
                 style={styles.input}
                 value={password}
-                placeholder="Enter your password"
+                placeholder="Create a secure password"
                 placeholderTextColor="#9E9E9E"
                 secureTextEntry={true}
                 onChangeText={(password) => setPassword(password)}
               />
             </View>
 
-            {/* Sign in button */}
+            {/* Sign up button */}
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={onSignInPress}
+              onPress={onSignUpPress}
             >
-              <Text style={styles.primaryButtonText}>Sign In</Text>
+              <Text style={styles.primaryButtonText}>Create Account</Text>
             </TouchableOpacity>
 
-            {/* Sign up link for new users */}
+            {/* Sign in link for existing users */}
             <View style={styles.footerContainer}>
-              <Text style={styles.footerText}>Don't have an account? </Text>
-              <Link href="/sign-up" asChild>
+              <Text style={styles.footerText}>Already have an account? </Text>
+              <Link href="/sign-in" asChild>
                 <TouchableOpacity>
-                  <Text style={styles.linkText}>Sign up</Text>
+                  <Text style={styles.linkText}>Sign in</Text>
                 </TouchableOpacity>
               </Link>
             </View>
@@ -270,7 +292,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
-  // Primary button (Sign In)
+  // Name inputs side by side
+  nameRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  nameInput: {
+    flex: 1,
+  },
+  // Primary button (Create Account / Verify)
   primaryButton: {
     backgroundColor: '#2E7D32',
     paddingVertical: 16,
@@ -288,7 +318,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  // Footer with sign-up link
+  // Footer with sign-in link
   footerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',

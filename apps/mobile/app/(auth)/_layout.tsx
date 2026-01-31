@@ -15,7 +15,8 @@ export default function AuthRoutesLayout() {
     return <Redirect href={'/'} />
   }
 
-  // If the user is not signed in, render the screens within this group 
+  // If the user is not signed in, render the screens within this group
   // (like sign-in.tsx or sign-up.tsx) using a Stack navigation.
-  return <Stack />
+  // Hide headers for full screen auth experience
+  return <Stack screenOptions={{ headerShown: false }} />
 }

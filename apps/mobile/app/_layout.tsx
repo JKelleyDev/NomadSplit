@@ -51,11 +51,11 @@ export default function RootLayout() {
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
       {/* ClerkLoaded ensures that the Clerk state is initialized before rendering the app UI */}
       <ClerkLoaded>
-        <Stack>
+        <Stack screenOptions={{ headerShown: false }}>
           {/* (auth) is a route group. We hide its header because it will have its own layout/screens. */}
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          {/* index is the default home screen. */}
-          <Stack.Screen name="index" options={{ title: 'Home' }} />
+          {/* index is the default home screen - no header for full screen experience */}
+          <Stack.Screen name="index" options={{ headerShown: false }} />
         </Stack>
       </ClerkLoaded>
     </ClerkProvider>
