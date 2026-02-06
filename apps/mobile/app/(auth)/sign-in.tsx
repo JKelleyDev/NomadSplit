@@ -1,307 +1,172 @@
 import { useSignIn } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
-import { StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
 import React from 'react'
-import { LinearGradient } from 'expo-linear-gradient'
+import { YStack, XStack, Button, H2, Input, Label, Paragraph, Spinner, Card } from 'tamagui'
 
-export default function Page() {
+export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn()
   const router = useRouter()
 
-  // Form state for user credentials
   const [emailAddress, setEmailAddress] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [pendingVerification, setPendingVerification] = React.useState(false)
   const [code, setCode] = React.useState('')
+  const [loading, setLoading] = React.useState(false)
 
-  // Handle the submission of the sign-in form
   const onSignInPress = async () => {
     if (!isLoaded) return
+    setLoading(true)
 
-    // Start the sign-in process using the email and password provided
     try {
       const signInAttempt = await signIn.create({
         identifier: emailAddress,
         password,
       })
 
-      // If sign-in process is complete, set the created session as active
-      // and redirect the user
       if (signInAttempt.status === 'complete') {
         await setActive({ session: signInAttempt.createdSessionId })
         router.replace('../')
       } else if (signInAttempt.status === 'needs_second_factor') {
-        // User has 2FA enabled, need to verify second factor (email code)
-        // Prepare email code verification
         await signIn.prepareSecondFactor({
           strategy: 'email_code',
         })
-        // Show verification code input
         setPendingVerification(true)
       } else {
-        // If the status isn't complete or needs_second_factor, check why
         console.error(JSON.stringify(signInAttempt, null, 2))
       }
     } catch (err) {
-      // See Clerk docs: custom flows error handling
-      // for more info on error handling
       console.error(JSON.stringify(err, null, 2))
+    } finally {
+      setLoading(false)
     }
   }
 
-  // Handle submission of 2FA verification code
   const onVerifyPress = async () => {
     if (!isLoaded) return
+    setLoading(true)
 
     try {
-      // Attempt to verify the second factor with the code provided
       const signInAttempt = await signIn.attemptSecondFactor({
         strategy: 'email_code',
         code,
       })
 
-      // If verification was completed, set the session to active and redirect
       if (signInAttempt.status === 'complete') {
         await setActive({ session: signInAttempt.createdSessionId })
         router.replace('../')
       } else {
-        // If the status is not complete, check why
         console.error(JSON.stringify(signInAttempt, null, 2))
       }
     } catch (err) {
-      // See Clerk docs: custom flows error handling
       console.error(JSON.stringify(err, null, 2))
+    } finally {
+      setLoading(false)
     }
   }
 
-  // 2FA Verification view - shown when second factor is needed
   if (pendingVerification) {
     return (
-      <LinearGradient
-        colors={['#2E7D32', '#558B2F', '#689F38']}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <YStack
+        flex={1}
+        justifyContent="center"
+        alignItems="center"
+        padding="$4"
+        backgroundColor="$background"
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.container}
+        <Card
+          width="100%"
+          maxWidth={450}
+          padding="$6"
+          gap="$4"
+          backgroundColor="$background"
         >
-          <ScrollView
-            contentContainerStyle={styles.scrollContainer}
-            keyboardShouldPersistTaps="handled"
+          <H2 textAlign="center" color="$color12">
+            Verify Your Email
+          </H2>
+          <Paragraph textAlign="center" color="$color11">
+            Enter the verification code sent to {emailAddress}
+          </Paragraph>
+
+          <YStack gap="$3">
+            <Label htmlFor="code">Verification Code</Label>
+            <Input
+              id="code"
+              placeholder="000000"
+              value={code}
+              onChangeText={setCode}
+              keyboardType="numeric"
+              size="$4"
+            />
+          </YStack>
+
+          <Button
+            theme="blue"
+            size="$4"
+            disabled={loading}
+            onPress={onVerifyPress}
+            marginTop="$2"
           >
-            {/* 2FA verification card */}
-            <View style={styles.card}>
-              <Text style={styles.logo}>🌿</Text>
-              <Text style={styles.title}>Two-Factor Authentication</Text>
-              <Text style={styles.subtitle}>
-                Enter the verification code sent to {emailAddress}
-              </Text>
-
-              {/* Verification code input */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Verification Code</Text>
-                <TextInput
-                  style={styles.input}
-                  value={code}
-                  placeholder="Enter 6-digit code"
-                  placeholderTextColor="#9E9E9E"
-                  onChangeText={(code) => setCode(code)}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                />
-              </View>
-
-              {/* Verify button */}
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={onVerifyPress}
-              >
-                <Text style={styles.primaryButtonText}>Verify & Sign In</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </LinearGradient>
+            {loading ? <Spinner color="$color" /> : 'Verify & Sign In'}
+          </Button>
+        </Card>
+      </YStack>
     )
   }
 
-  // Initial sign-in form view
   return (
-    <LinearGradient
-      colors={['#2E7D32', '#558B2F', '#689F38']}
-      style={styles.gradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <YStack
+      flex={1}
+      justifyContent="center"
+      alignItems="center"
+      padding="$4"
+      backgroundColor="$background"
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContainer}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Sign-in form card */}
-          <View style={styles.card}>
-            <Text style={styles.logo}>🌿</Text>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>
-              Sign in to continue managing your shared expenses
-            </Text>
 
-            {/* Email input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                autoCapitalize="none"
-                value={emailAddress}
-                placeholder="john@example.com"
-                placeholderTextColor="#9E9E9E"
-                onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
-                keyboardType="email-address"
-              />
-            </View>
+      <Card>
+        
+        <Card.Header/>
+          <H2 textAlign='center'>Sign in to NomadSplit</H2>
+          <Label htmlFor="email" >Email</Label>
+          <Input
+            id="email"
+            placeholder="email@example.com"
+            value={emailAddress}
+            onChangeText={setEmailAddress}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            type="email"
+            size="$4"
+          />
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            placeholder="Enter password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={true}
+            type="password"
+            size="$4"
+          />
+        <Card.Footer paddingVertical="$4" alignItems="center" justifyContent="center">
+          <Button
+            disabled={loading}
+            onPress={onSignInPress}
+            width="100%"
+          >
+            {loading ? <Spinner color="$color" /> : 'Sign In'}
+          </Button>
+        </Card.Footer>
+      </Card>
 
-            {/* Password input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                value={password}
-                placeholder="Enter your password"
-                placeholderTextColor="#9E9E9E"
-                secureTextEntry={true}
-                onChangeText={(password) => setPassword(password)}
-              />
-            </View>
 
-            {/* Sign in button */}
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={onSignInPress}
-            >
-              <Text style={styles.primaryButtonText}>Sign In</Text>
-            </TouchableOpacity>
-
-            {/* Sign up link for new users */}
-            <View style={styles.footerContainer}>
-              <Text style={styles.footerText}>Don't have an account? </Text>
-              <Link href="/sign-up" asChild>
-                <TouchableOpacity>
-                  <Text style={styles.linkText}>Sign up</Text>
-                </TouchableOpacity>
-              </Link>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </LinearGradient>
+        <XStack justifyContent="center" gap="$2" marginTop="$4">
+          <Paragraph color="$color11">Don't have an account?</Paragraph>
+          <Link href="/sign-up">
+            <Paragraph color="$blue10" textDecorationLine="underline">
+              Sign up
+            </Paragraph>
+          </Link>
+        </XStack>
+    </YStack>
   )
 }
-
-const styles = StyleSheet.create({
-  // Gradient background that fills the screen
-  gradient: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-  // White card container for form
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 32,
-    width: '100%',
-    maxWidth: 440,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  // Logo and header styles
-  logo: {
-    fontSize: 48,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2E7D32',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#757575',
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 20,
-  },
-  // Input field styles
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#424242',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#212121',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  // Primary button (Sign In)
-  primaryButton: {
-    backgroundColor: '#2E7D32',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 8,
-    shadowColor: '#2E7D32',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // Footer with sign-up link
-  footerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#757575',
-  },
-  linkText: {
-    fontSize: 14,
-    color: '#2E7D32',
-    fontWeight: '600',
-  },
-})

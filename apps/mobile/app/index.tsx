@@ -1,163 +1,84 @@
 import { SignedIn, SignedOut, useUser } from '@clerk/clerk-expo'
 import { Link } from 'expo-router'
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native'
+import { Dimensions } from 'react-native'
+import { YStack, Button, H1, H2 } from 'tamagui'
 import { SignOutButton } from './components/SignOutButton'
-import { LinearGradient } from 'expo-linear-gradient'
+import LottieView from 'lottie-react-native'
+import { useRef } from 'react'
+import { themes } from '../themes'
 
-// Get screen dimensions for responsive design
-const { width, height } = Dimensions.get('window')
+const { height } = Dimensions.get('window')
 
 export default function Page() {
   const { user } = useUser()
+  const animation = useRef<LottieView>(null)
 
   return (
-    <View style={styles.container}>
+    <YStack flex={1} backgroundColor="$background">
       {/* Signed In View - Show user dashboard */}
       <SignedIn>
-        <View style={styles.dashboardContainer}>
-          <Text style={styles.welcomeText}>Hello {user?.fullName}</Text>
+        <YStack
+          flex={1}
+          justifyContent="center"
+          alignItems="center"
+          padding="$8"
+          backgroundColor="$background"
+        >
+          <H2 color="$color12" fontWeight="600" marginBottom="$6">
+            Hello {user?.fullName}
+          </H2>
           <SignOutButton />
-        </View>
+        </YStack>
       </SignedIn>
 
       {/* Signed Out View - Show landing page with auth options */}
       <SignedOut>
-        {/* Nature-themed gradient background */}
-        <LinearGradient
-          colors={['#2E7D32', '#558B2F', '#689F38']}
-          style={styles.gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+        <YStack
+          flex={1}
+          justifyContent="space-evenly"
+          alignItems="center"
+          paddingHorizontal="$8"
+          paddingTop={height * 0.15}
+          paddingBottom={height * 0.15}
         >
-          <View style={styles.contentContainer}>
-            {/* Logo and branding section */}
-            <View style={styles.logoContainer}>
-              <Text style={styles.logoIcon}>🌿</Text>
-              <Text style={styles.logoText}>NomadSplit</Text>
-              <Text style={styles.tagline}>
-                Split expenses, share adventures
-              </Text>
-            </View>
+          {/* Logo and branding section */}
+          <YStack alignItems="center" gap="$4" width="100%" maxWidth={500}>
+            <LottieView
+              ref={animation}
+              source={require('../assets/travel-animation.json')}
+              autoPlay
+              loop
+              style={{ width: 250, height: 250, maxWidth: '100%', backfaceVisibility: 'visible' }}
+            
+            />
+            <H1 size="$10" fontWeight="700">
+              NomadSplit
+            </H1>
+            <H2
+              size="$6"
+              textAlign="center"
+              fontWeight="400"
+            >
+              Split expenses, share adventures
+            </H2>
+          </YStack>
 
-            {/* Authentication buttons section */}
-            <View style={styles.buttonContainer}>
-              {/* Primary Sign Up button */}
-              <Link href="/(auth)/sign-up" asChild>
-                <TouchableOpacity style={styles.primaryButton}>
-                  <Text style={styles.primaryButtonText}>Get Started</Text>
-                </TouchableOpacity>
-              </Link>
+          {/* Authentication buttons section */}
+          <YStack width="100%" gap="$4" maxWidth={400}>
+            <Link href="/(auth)/sign-up" asChild>
+              <Button>
+                Get Started
+              </Button>
+            </Link>
 
-              {/* Secondary Sign In button */}
-              <Link href="/(auth)/sign-in" asChild>
-                <TouchableOpacity style={styles.secondaryButton}>
-                  <Text style={styles.secondaryButtonText}>Sign In</Text>
-                </TouchableOpacity>
-              </Link>
-            </View>
-          </View>
-        </LinearGradient>
+            <Link href="/(auth)/sign-in" asChild>
+              <Button>
+                Sign In
+              </Button>
+            </Link>
+          </YStack>
+        </YStack>
       </SignedOut>
-    </View>
+    </YStack>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  // Gradient background that fills the screen
-  gradient: {
-    flex: 1,
-    width: width,
-    height: height,
-  },
-  contentContainer: {
-    flex: 1,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingTop: height * 0.2, // 20% from top
-    paddingBottom: 60,
-  },
-  // Logo and branding styles
-  logoContainer: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  logoIcon: {
-    fontSize: 72,
-    marginBottom: 8,
-  },
-  logoText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    letterSpacing: 1,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  tagline: {
-    fontSize: 18,
-    color: '#FFFFFF',
-    opacity: 0.95,
-    textAlign: 'center',
-    marginTop: 8,
-    letterSpacing: 0.5,
-  },
-  // Button container and button styles
-  buttonContainer: {
-    width: '100%',
-    gap: 16,
-    maxWidth: 400,
-  },
-  // Primary button (Get Started) - filled white background
-  primaryButton: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  primaryButtonText: {
-    color: '#2E7D32',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  // Secondary button (Sign In) - outlined with transparent background
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  secondaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  // Dashboard view for signed-in users
-  dashboardContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-    backgroundColor: '#F5F5F5',
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#2E7D32',
-    marginBottom: 24,
-  },
-})
