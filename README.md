@@ -1,6 +1,7 @@
 # NomadSplit
 
 A collaborative travel planning app built with Expo (React Native) and FastAPI.
+https://github.com/JKelleyDev/NomadSplit/blob/main/ScreenRecording_02-06-2026%2009-16-47_1.gif 
 
 ## Project Structure
 ```
